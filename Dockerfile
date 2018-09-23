@@ -27,7 +27,7 @@ WORKDIR ../
 # Bundle app source
 COPY . /usr/src/app
 
-EXPOSE 3000
+EXPOSE 3001
 RUN chmod +x /usr/src/app/docker-entrypoint.sh
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
 
