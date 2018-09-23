@@ -1,0 +1,14 @@
+MACD_fast =12
+MACD_slow = 26
+MACD_signal = 9
+EMA_short = 9
+EMA_long = 11
+STOCH_fastk = 9
+STOCH_slowk= 3
+STOCH_slowkma= 1
+STOCH_slowd= 3
+STOCH_slowdma= 1
+RSI = 14
+RSI_high = 70
+RSI_low = 30
+#historySize = 48
