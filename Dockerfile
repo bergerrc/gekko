@@ -1,7 +1,7 @@
 FROM node:8
 
 ENV HOST localhost
-ENV PORT 3000
+ENV PORT 3001
 
 # Create app directory
 RUN mkdir -p /usr/src/app
