@@ -17,11 +17,13 @@
   "dependencies": {
     "async": "2.1.2",
     "bitfinex-api-node": "^1.2.1",
+    "bufferutil": "^4.0.0",
     "co-fs": "^1.2.0",
     "commander": "^2.13.0",
     "convnetjs": "^0.3.0",
     "csv-parse": "^3.0.0",
     "gekko": "0.0.9",
+    "graceful-fs": "^4.1.11",
     "humanize-duration": "^3.10.0",
     "koa": "^1.2.0",
     "koa-bodyparser": "^2.2.0",
