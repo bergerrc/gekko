@@ -259,7 +259,7 @@ Trader.prototype.createOrder = function(side, amount, advice, id) {
     balance: this.balance
   });
 
-  this.order = this.broker.createOrder(type, side, amount);
+  this.order = this.broker.createOrder(type, side, amount, advice.params);
 
   this.order.on('fill', f => log.info('[ORDER] partial', side, 'fill, total filled:', f));
   this.order.on('statusChange', s => log.debug('[ORDER] statusChange:', s));
