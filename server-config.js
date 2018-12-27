@@ -140,13 +140,13 @@ config.eventLogger = {
   // whitelist: ['portfolioChange', 'portfolioValueChange']
 }
 
-config.telegrambot = {
+/*config.telegrambot = {
   enabled: true,
   // Receive notifications for trades and warnings/errors related to trading
   emitTrades: true,
   emitPerformance: true,
-  token: '725925143:AAGX6Qhpf0x1TrrwUPYEdau1eJlsK_w03ZY',
-  botName: 'gekko1_bot'
-};
+  token: 'token',
+  botName: 'botname'
+};*/
 
 module.exports = config;
