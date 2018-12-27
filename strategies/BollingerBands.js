@@ -24,6 +24,7 @@ method.init = function() {
 
   // define the indicators we need
   this.addIndicator('bb', 'BB', this.settings.bbands);
+  //console.log(this.settings.bbands);
 }
 
 
@@ -32,6 +33,11 @@ method.init = function() {
 method.log = function(candle) {
   var digits = 8;
   var BB = this.indicators.bb;
+  /*
+  console.log('upper: ' + BB.upper);
+  console.log('middle: ' + BB.middle);
+  console.log('lower: ' + BB.lower);
+  */
   //BB.lower; BB.upper; BB.middle are your line values 
 
 log.debug('______________________________________');
@@ -75,12 +81,12 @@ method.check = function(candle) {
   else {
     // There is a zone change
     log.debug('Leaving zone: ',this.trend.zone)
-    if (this.trend.zone == 'top') this.advice('short');
-    if (this.trend.zone == 'bottom') this.advice('long');
-  if (this.trend.zone == 'high') this.advice();
-    if (this.trend.zone == 'low') this.advice();
-    if (this.trend.zone == 'top') log.debug(   '>>>>>   SIGNALING ADVICE SHORT   <<<<<<<<<<<<');
-    if (this.trend.zone == 'bottom') log.debug('>>>>>   SIGNALING ADVICE LONG    <<<<<<<<<<<<');
+    if (zone == 'top') this.advice('short');
+    if (zone == 'bottom') this.advice('long');
+  if (zone == 'high') this.advice();
+    if (zone == 'low') this.advice();
+    if (zone == 'top') log.debug(   '>>>>>   SIGNALING ADVICE SHORT   <<<<<<<<<<<<');
+    if (zone == 'bottom') log.debug('>>>>>   SIGNALING ADVICE LONG    <<<<<<<<<<<<');
     this.trend = {
     zone: zone,  // none, top, high, low, bottom
     duration: 0,
