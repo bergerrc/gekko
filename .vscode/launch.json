@@ -1,0 +1,73 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Passe o mouse para ver as descrições dos atributos existentes.
+    // Para obter mais informações, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Remote",
+            "address": "localhost",
+            "port": 9229,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "${workspaceFolder}"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Gekko UI",
+            "program": "${workspaceRoot}/gekko.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--ui"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Gekko Papertrader",
+            "program": "${workspaceRoot}/gekko.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","test-config.js"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Gekko Backtest",
+            "program": "${workspaceRoot}/gekko.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","test-config.js","--backtest"]
+        },
+
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Heart",
+            "program": "${workspaceRoot}/test/test.js",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Gekko Import",
+            "program": "${workspaceRoot}/gekko.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["-c", "import-config.js", "--import"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Mocha Tests",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "tdd",
+                "--timeout",
+                "999999",
+                "--colors",
+                "${workspaceFolder}/test/indicators/bb.js"
+            ],
+            "internalConsoleOptions": "openOnSessionStart"
+        }
+
+        
+    ]
+}
