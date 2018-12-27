@@ -1,5 +1,6 @@
 var SMA = require('./SMA.js');
 var Indicator = function(BBSettings) {
+    this.input = 'price';
     this.settings = BBSettings;
 
     this.center = new SMA(this.settings.TimePeriod);

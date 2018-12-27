@@ -1,7 +1,7 @@
 // STC coded by Gab0 03/29/2018;
 //settings: short, long, signal, cycle, smooth;
 var MACD = require('./MACD');
-var STOCH = require('./STOCH');
+//var STOCH = require('./STOCH');
 
 var Indicator = function (settings) {
     this.input = 'price';
