@@ -22,7 +22,7 @@ var Trader = function(config) {
   this.pair = this.asset + this.currency;
   this.bitfinex = new Bitfinex.RESTv1({apiKey: this.key, apiSecret: this.secret, transform: true});
 
-  this.interval = 2000;
+  this.interval = 5000;
 }
 
 const includes = (str, list) => {
@@ -85,6 +85,16 @@ Trader.prototype.handleResponse = function(funcName, callback) {
         return callback(error);
       }
 
+      // in some situations bfx returns 404 on
+      // orders created recently
+      if(
+        funcName === 'cancelOrder' &&
+        message.includes('could not be cancelled')
+      ) {
+        error.retry = 0;
+        return callback(error);
+      }
+
       if(includes(message, recoverableErrors)) {
         error.notFatal = true;
         return callback(error);
@@ -92,7 +102,7 @@ Trader.prototype.handleResponse = function(funcName, callback) {
 
       if(includes(message, 'Too Many Requests')) {
         error.notFatal = true;
-        error.backoffDelay = 5000;
+        error.backoffDelay = 30000;
       }
     }
 
@@ -230,12 +240,12 @@ Trader.prototype.getOrder = function(order_id, callback) {
     // TEMP: Thu May 31 14:49:34 CEST 2018
     // the `past_trades` call is not returning
     // any data.
-    return callback(undefined, {price, amount, date});
+    //return callback(undefined, {price, amount, date});
 
     const processPastTrade = (err, data) => {
       if (err) return callback(err);
 
-      console.log('processPastTrade', data);
+      //console.log('processPastTrade', data);
       const trade = _.first(data);
 
       const fees = {
@@ -246,10 +256,10 @@ Trader.prototype.getOrder = function(order_id, callback) {
     }
 
     // we need another API call to fetch the fees
-    const feeFetcher = cb => this.bitfinex.past_trades(this.currency, {since: data.timestamp}, this.handleResponse('pastTrades', cb));
+    const feeFetcher = cb => this.bitfinex.past_trades(data.symbol, {since: data.timestamp}, this.handleResponse('pastTrades', cb));
     retry(null, feeFetcher, processPastTrade);
 
-    callback(undefined, {price, amount, date});
+    //callback(undefined, {price, amount, date});
   };
 
   const fetcher = cb => this.bitfinex.order_status(order_id, this.handleResponse('getOrder', cb));
@@ -258,12 +268,21 @@ Trader.prototype.getOrder = function(order_id, callback) {
 
 
 Trader.prototype.cancelOrder = function(order_id, callback) {
+  console.log( 'Cancel Order Id:' + order_id);
+  
   const processResponse = (err, data) => {
     if (err) {
-      return callback(err);
+      if ( err.message.includes('could not be cancelled') && order_id){
+        console.log( 'Order Id:' + order_id);
+        return this.bitfinex.order_status(order_id, processResponse);
+      }else 
+        return callback(err);
     }
-
-    return callback(undefined, false);
+    let filled = false;
+    if(_.isObject(data)) {
+      filled = data.original_amount === data.executed_amount;
+    }
+    return callback(undefined, filled, data);
   }
 
   const handler = cb => this.bitfinex.cancel_order(order_id, this.handleResponse('cancelOrder', cb));
@@ -309,6 +328,17 @@ Trader.getCapabilities = function () {
     forceReorderDelay: true,
     gekkoBroker: 0.6
   };
+}
+
+Trader.prototype.getOrdersHistory = function(callback) {
+  const processResponse = (err, data) => {  
+    if (err) return callback(err);
+
+    callback(undefined, data);
+  };
+
+  const handler = cb => this.bitfinex.orders_history(cb);
+  retry(null, handler, processResponse);
 }
 
 module.exports = Trader;

@@ -63,7 +63,7 @@ class StickyOrder extends BaseOrder {
         this.limit = -Infinity;
     }
 
-    this.status = states.SUBMITTED;
+    this.status = states.INITIALIZING;
     this.emitStatus();
 
     this.orders = {};
@@ -135,7 +135,7 @@ class StickyOrder extends BaseOrder {
   }
 
   createOrder() {
-    if(this.completed || this.completing) {
+    if(this.completed || this.completing || this.cancelling) {
       return false;
     }
 
@@ -147,6 +147,9 @@ class StickyOrder extends BaseOrder {
       price: this.price,
       alreadyFilled
     });
+    
+    this.status === states.SUBMITTED;
+    this.emitStatus();
   }
 
   // check if the last order was partially filled
@@ -516,6 +519,7 @@ class StickyOrder extends BaseOrder {
     if(
       this.status === states.SUBMITTED ||
       this.status === states.MOVING ||
+      this.status === states.INITIALIZING ||
       this.sticking
     ) {
       this.cancelling = true;
