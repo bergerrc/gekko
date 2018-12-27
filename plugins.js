@@ -229,7 +229,43 @@ var plugins = [
     async: false,
     modes: ['realtime'],
     greedy: true
-  }
+  },
+  {
+    name: 'Google Forms',
+    description: 'Logs Trades to Google Forms',
+    slug: 'gforms',
+    async: false,
+    modes: ['realtime'],
+    dependencies: [{
+      module: 'request',
+      version: '2.85.0'
+    }]
+  },
+  {
+    name: 'Candle and Indicator Writer',
+    description: 'Logs indicators and candle info to sheet',
+    slug: 'ciWriter',
+    async: false,
+    modes: ['realtime','backtest'],
+    dependencies: [{
+      module: 'xlsx',
+      version: '0.14.1'
+    },{
+      module: 'extend',
+      version: '3.0.2'
+    }]
+  },
 ];
 
 module.exports = plugins;
+
+/*
+  {
+    name: 'Strategy Process small Candles',
+    description: 'Strategy that uses every tick to load the indicator in different candle size',
+    slug: 'BollingerBands_SMA3',
+    async: false,
+    modes: ['realtime','backtest'],
+    path: config => '../strategies/BollingerBands_SMA3',
+  }
+*/
