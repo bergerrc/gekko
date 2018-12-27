@@ -4,6 +4,7 @@ const _ = require('lodash');
 const config = require('../core/util').getConfig();
 const telegrambot = config.telegrambot;
 const emitTrades = telegrambot.emitTrades;
+const emitPerformance = telegrambot.emitPerformance;
 const utc = moment.utc;
 const telegram = require("node-telegram-bot-api");
 
@@ -22,6 +23,7 @@ const Actor = function() {
     '/subscribe': 'emitSubscribe',
     '/unsubscribe': 'emitUnSubscribe',
     '/price': 'emitPrice',
+    '/balance': 'emitBalance',
     '/help': 'emitHelp'
   };
   if (telegrambot.donate) {
@@ -193,5 +195,29 @@ Actor.prototype.emitHelp = function() {
 Actor.prototype.logError = function(message) {
   log.error('Telegram ERROR:', message);
 };
+
+if ( emitPerformance ){
+
+  Actor.prototype.processPerformanceReport = function (performanceReport) {
+    this.performanceReport = performanceReport;   
+  }
+
+  Actor.prototype.emitBalance = function () {
+    if ( !this.performanceReport ){
+      this.bot.sendMessage(this.chatId, 'Balance is not available yet'); 
+      return;
+    }
+    var message = '===Balance=== ' + 
+    '\nStart: ' + this.performanceReport.startTime +
+    '\nEndTime: ' + this.performanceReport.endTime +
+    '\nMarket: ' + this.performanceReport.market +
+    '\nProfit: ' + this.performanceReport.profit +
+    '\nTrades: ' + this.performanceReport.trades +
+    '\nRelativeProfit: ' + this.performanceReport.relativeProfit +
+    '\nStartBalance: ' + this.performanceReport.startBalance +
+    '\nBalance: ' + this.performanceReport.balance ;
+    this.bot.sendMessage(this.chatId, message); 
+  }
+}
 
 module.exports = Actor;
