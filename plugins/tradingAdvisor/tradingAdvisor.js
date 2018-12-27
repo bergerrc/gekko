@@ -95,12 +95,19 @@ Actor.prototype.processCandle = function(candle, done) {
     this.next = false;
   }
   this.batcher.flush();
+  this.emitMinorStratCandle(candle);
 }
 
 // propogate a custom sized candle to the trading strategy
 Actor.prototype.emitStratCandle = function(candle) {
   const next = this.next || _.noop;
   this.strategy.tick(candle, next);
+}
+
+// propogate a custom sized candle to the trading strategy
+Actor.prototype.emitMinorStratCandle = function(candle) {
+  const next = this.next || _.noop;
+  this.strategy.minorTick(candle, next);
 }
 
 Actor.prototype.processTradeCompleted = function(trade) {

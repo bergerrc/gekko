@@ -241,6 +241,7 @@ Base.prototype.advice = function(newDirection) {
   }
 
   let trigger;
+  let parameters;
   if(_.isObject(newDirection)) {
     if(!_.isString(newDirection.direction)) {
       log.error('Strategy emitted unparsable advice:', newDirection);
@@ -268,7 +269,9 @@ Base.prototype.advice = function(newDirection) {
         }
       }
     }
-
+    if ( newDirection.params && _.isObject(newDirection.params) )
+      parameters = newDirection.params;
+    
     newDirection = newDirection.direction;
   }
 
@@ -295,6 +298,9 @@ Base.prototype.advice = function(newDirection) {
   } else {
     this._pendingTriggerAdvice = null;
   }
+
+  if ( parameters )
+    advice.params = parameters;
 
   this.emit('advice', advice);
 
