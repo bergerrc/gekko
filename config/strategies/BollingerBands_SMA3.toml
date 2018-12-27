@@ -1,0 +1,10 @@
+SMA_long = 200
+SMA_short = 50
+trailingStopLossPct = 0.1 
+minProfit = 0.01
+#lastBuyPrice=6500
+candles=[1,5,15,30,45,60,90,120,240,480]
+[bbands]
+TimePeriod = 20
+NbDevUp = 2
+NbDevDn = 2

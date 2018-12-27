@@ -1,0 +1,9 @@
+SMA_long = 200
+SMA_short = 50
+trailingStopLossPct = 0.055 
+minProfit = 0.005
+#lastBuyPrice=6500
+[bbands]
+TimePeriod = 20
+NbDevUp = 2
+NbDevDn = 2
