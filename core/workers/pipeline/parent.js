@@ -1,3 +1,5 @@
+const vm = require('vm');
+const v8debug = vm.runInDebugContext('Debug');
 var fork = require('child_process').fork;
 
 module.exports = (mode, config, callback) => {

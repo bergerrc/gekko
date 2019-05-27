@@ -31,7 +31,8 @@
 //   console.log('data', data.length);
 // })
 
-
+const vm = require('vm');
+const v8debug = vm.runInDebugContext('Debug');
 const fork = require('child_process').fork;
 const _ = require('lodash');
 
