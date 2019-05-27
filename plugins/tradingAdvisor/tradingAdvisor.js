@@ -107,7 +107,8 @@ Actor.prototype.emitStratCandle = function(candle) {
 // propogate a custom sized candle to the trading strategy
 Actor.prototype.emitMinorStratCandle = function(candle) {
   const next = this.next || _.noop;
-  this.strategy.minorTick(candle, next);
+  const minorTick = this.strategy.minorTick || function(){};
+  minorTick(candle, next);
 }
 
 Actor.prototype.processTradeCompleted = function(trade) {
