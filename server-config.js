@@ -205,7 +205,6 @@ config.eventLogger = {
   // whitelist: ['portfolioChange', 'portfolioValueChange']
 }
 
-<<<<<<< HEAD
 config.telegrambot = {
   enabled: process.env.TELEGRAM_TOKEN?true:false,
   // Receive notifications for trades and warnings/errors related to trading
