@@ -133,10 +133,14 @@ method.trending = function(){
     maQuick = this.indicators.maQuick.result,
     bb = this.indicators.bb;
     // NOTE: maFast will always be under maSlow if maSlow can't be calculated
-    if ( maFast > maSlow && (bb.upper-bb.lower) < (maFast - maSlow))
+    let pos = bb.bandWidth.length;
+    if ( pos>1 && bb.bandWidth[pos-2] < bb.bandWidth[pos-1]*0.85 && maQuick < bb.middle && bb.bandWidth[pos-1] > bb.middle*0.03)
+        return INFINITE_FALL;
+    else
+    if ( maFast > maSlow && bb.bandWidth[pos-1] < (maFast - maSlow))
         return BULL;
     else
-    if ( maFast < maSlow && (bb.upper-bb.lower) > (maSlow - maFast))
+    if ( maFast < maSlow && bb.bandWidth[pos-1] > (maSlow - maFast))
         return BEAR;
     /*else
     if ( maQuick < bb.middle 
@@ -459,7 +463,8 @@ method.check = function(candle) {
         this.trend.duration++;
         this.trend.persisted = true;
         this.trend.probability = probability;
-        if ( this.lastTrade && this.lastTrade.action == 'buy' && this.trending()==INFINITE_FALL && this.canSell(price) )
+        let trend = this.trending();
+        if ( this.lastTrade && this.lastTrade.action == 'buy' && trend==INFINITE_FALL && this.canSell(price) )
             this.short();
         else 
         if ( region == OUTER && this.lastTrade && this.lastTrade.action == 'buy' && this.canSell(price, fn)){
@@ -543,6 +548,17 @@ method.updateCustom = function(candle, candleSize) {
         i.update(candle);
     },this);
 }
+
+method.update = function(candle){
+    let maSlow = this.indicators.maSlow,
+    maFast = this.indicators.maFast,
+    maQuick = this.indicators.maQuick,
+    bb = this.indicators.bb;
+
+    if ( bb.bandWidth == undefined ) 
+        bb.bandWidth = [];
+    bb.bandWidth.push( bb.upper-bb.lower );
+};
 
 method.addIndicator = function(name, type, parameters) {
     if(!_.contains(allowedIndicators, type))

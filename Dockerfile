@@ -1,7 +1,6 @@
 FROM node:8
 
-ENV HOST localhost
-ENV PORT 3000
+    ENV CONFIG_FILE ${CONFIG_FILE}
 
 # Create app directory
 RUN mkdir -p /usr/src/app
@@ -26,13 +25,15 @@ WORKDIR ../
 
 # Bundle app source
 COPY . /usr/src/app
+#COPY ${GOOGLE_APPLICATION_CREDENTIALS} /usr/src/app/
+#COPY ${CONFIG_FILE} /usr/src/app/
 
 EXPOSE ${PORT}
 RUN chmod +x /usr/src/app/docker-entrypoint.sh
 COPY ./docker-entrypoint.sh /usr/src/app/entrypoint.sh
-RUN apt-get update && apt-get install -y dos2unix
-RUN dos2unix /usr/src/app/entrypoint.sh && apt-get --purge remove -y dos2unix && rm -rf /var/lib/apt/lists/*
+RUN apt-get update || apt-get install -y dos2unix
+RUN dos2unix /usr/src/app/entrypoint.sh && apt-get --purge remove -y dos2unix || rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
 
-CMD ["--config", "config.js", "--ui"]
+CMD ["--ui", "--config", "echo ${CONFIG_FILE}"]

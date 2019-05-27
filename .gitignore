@@ -14,7 +14,7 @@
 .DS_Store
 Thumbs.db
 config.js
-api-keys.js
+api-keys*.js
 .cache
 .project
 .settings
@@ -22,6 +22,7 @@ api-keys.js
 nbproject
 *.sublime-project
 *.sublime-workspace
+*.csv
 
 # Dreamweaver added files
 _notes
@@ -48,5 +49,11 @@ config.js
 config-*.js
 private-*.js
 private-*.toml
-SECRET-api-keys.json
+*keys*.json
 exchange/nusadua
+-ui.js
+.env
+.firebaserc
+firebase.json
+package-lock.json
+server-config.json

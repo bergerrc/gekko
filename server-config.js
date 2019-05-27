@@ -1,44 +1,94 @@
 // Everything is explained here:
 // @link https://gekko.wizb.it/docs/commandline/plugins.html
 const _ = require('lodash');
+const vm = require('vm');
+const v8debug = vm.runInDebugContext('Debug');
+const util = require(process.cwd() + '/core/util');
+const dateformat = require('dateformat');
+const fs = require('fs');
+const toml = require('toml');
+const dirs = util.dirs();
 
 var config = {};
-var base = require('./web/routes/baseConfig');
-//var UIconfig = require('./web/vue/dist/UIconfig');
-
+var base = require(dirs.web + 'baseUIconfig');
 _.merge(config, base);
+
+const getTOML = function(fileName) {
+  var raw = fs.readFileSync(fileName);
+  return toml.parse(raw);
+}
+let configBuilder = require(dirs.tools + "configBuilder")(); 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                          GENERAL SETTINGS
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+var debug = typeof v8debug === 'object';
+config.debug = debug || process.env.NODE_ENV!== 'production'?true:false; // for additional logging / debugging
 
-//config.debug = true; // for additional logging / debugging
+//Override defaults with .ENV
+config.headless = process.env.HEADLESS? process.env.HEADLESS: config.headless;
+config.api.host = process.env.API_HOST? process.env.API_HOST: config.api.host;
+config.api.port = process.env.PORT? parseInt(process.env.PORT): config.api.port;
+config.api.timeout = process.env.API_TIMEOUT? parseInt(process.env.API_TIMEOUT): config.api.timeout;
+
+config.ui.ssl = process.env.HOST_SSL? process.env.HOST_SSL: config.ui.ssl;
+config.ui.host = process.env.HOST? process.env.HOST: config.ui.host;
+config.ui.port = process.env.PORT? parseInt(process.env.PORT): config.ui.port;
+config.ui.path = process.env.UI_PATH? process.env.UI_PATH: config.ui.path;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                       CONFIGURING ADAPTER
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 config.candleWriter = {
-  enabled: true
+  enabled: process.env.READONLY?false:true
 }
-// configurable in the UIconfig
-//config.adapter = UIconfig.adapter;
-config.adapter = 'sqlite';
+
+config.adapter = process.env.ADAPTER? process.env.ADAPTER: config.adapter;
+
+config.firestore = {
+  path: 'plugins/firestore',
+  version: 0.1,
+  projectId: process.env.GCLOUD_PROJECT,
+  rootCollection: process.env.FIRESTORE_ROOT_COLLECTION,
+  keyFilename: process.env.FIRESTORE_KEYFILENAME? process.env.FIRESTORE_KEYFILENAME: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  //errorOnDuplicate: true,
+  dependencies: [{
+    module: "@google-cloud/firestore",
+    version: "3.0.0"
+  }],
+  ratelimit: process.env.BIGQUERY_RATELIMIT? parseInt(process.env.BIGQUERY_RATELIMIT): 20
+}
+
+
+config.bigquery = {
+  path: 'plugins/bigquery',
+  version: 0.1,
+  projectId: process.env.GCLOUD_PROJECT,
+  datasetId: process.env.BIGQUERY_DATASET_ID,
+  keyFilename: process.env.BIGQUERY_KEYFILENAME? process.env.BIGQUERY_KEYFILENAME: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  //preventDuplicatedTS: true,
+  dependencies: [{
+    module: "@google-cloud/bigquery",
+    version: "3.0.0"
+  }],
+  ratelimit: process.env.BIGQUERY_RATELIMIT? parseInt(process.env.BIGQUERY_RATELIMIT): 20
+}
 
 config.sqlite = {
   path: 'plugins/sqlite',
   version: 0.1,
   dataDirectory: 'history',
-  journalMode: require('./web/isWindows.js') ? 'PERSIST' : 'WAL',
+  journalMode: require(dirs.web + 'isWindows.js') ? 'PERSIST' : 'WAL',
   dependencies: [{
     module: 'sqlite3',
     version: '3.1.4'
   }]
 }
 
-// Postgres adapter example config (please note: requires postgres >= 9.5):
 config.postgresql = {
   path: 'plugins/postgresql',
   version: 0.1,
-  connectionString: 'postgres://user:pass@localhost:5432', // if default port
-  database: 'gekko', // if set, we'll put all tables into a single database.
+  connectionString: process.env.POSTGRESQL_CONNECTION, 
+  database: process.env.POSTGRESQL_DATABASE, 
   schema: 'public',
   dependencies: [{
     module: 'pg',
@@ -46,37 +96,48 @@ config.postgresql = {
   }]
 }
 
+// Mongodb adapter, requires mongodb >= 3.3 (no version earlier tested)
+config.mongodb = {
+  path: 'plugins/mongodb',
+  version: 0.1,
+  connectionString: process.env.MONGODB_CONNECTION, //'mongodb://mongodb/gekko', // connection to mongodb server
+  dependencies: [{
+    module: 'mongojs',
+    version: '2.4.0'
+  }]
+}
+
+if ( !process.env.WATCH_EXCHANGE ){
+  let generalConfig = {};
+  generalConfig.watch = configBuilder.watch;
+  _.merge(config, generalConfig );
+}
 config.watch = {
   // see https://gekko.wizb.it/docs/introduction/supported_exchanges.html
-  exchange: 'bitfinex',
-  currency: 'USD',
-  asset: 'BTC'
+  exchange: process.env.WATCH_EXCHANGE? process.env.WATCH_EXCHANGE: config.watch.exchange, //'bitfinex',
+  currency: process.env.WATCH_CURRENCY? process.env.WATCH_CURRENCY: config.watch.currency, //'USD',
+  asset: process.env.WATCH_ASSET? process.env.WATCH_ASSET: config.watch.asset //'BTC'
 }
 config.tradingAdvisor = {
   enabled: true,
-  method: 'BollingerBands_SMA3',
-  candleSize: 30,
+  method: process.env.STRATEGY? process.env.STRATEGY: config.tradingAdvisor.method, //'BollingerBands_SMA3',
+  candleSize: 5,
   historySize: 200
 }
 
-config.BollingerBands_SMA3 = {
-  SMA_long: 200,
-  SMA_short: 50,
-  trailingStopLossPct: 0.1,
-  minProfit: 0.02,
-  candles: [5,15,30,45,60,90,120,240,480],
-  bbands: {
-    TimePeriod: 20,
-    NbDevUp: 2,
-    NbDevDn: 2
-  }
-};
+//Load strategy parameters from config dir
+if ( process.env.STRATEGY ){
+  let stratConfig = {};
+  stratConfig[process.env.STRATEGY] = getTOML(dirs.config + 'strategies/' + process.env.STRATEGY + '.toml');
+  
+  _.merge(config, stratConfig );
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                       CONFIGURING TRADING ADVICE
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 config.backtestResultExporter = {
-  enabled: true,
+  enabled: false,
   writeToDisk: false,
   data: {
     stratUpdates: false,
@@ -86,11 +147,15 @@ config.backtestResultExporter = {
     trades: false
   }
 }
+
+var now = new Date();
+var yesterday = new Date(Date.now()-3600*24*1000);
+
 config.backtest = {
   //  daterange: 'scan',
    daterange: {
-     from: "2018-12-05 00:00:00",
-     to: "2018-12-27 13:00:00"
+     from: process.env.BACKTEST_FROM? process.env.BACKTEST_FROM: dateformat(yesterday,'yyyy-mm-dd HH:MM:ss'), //"2019-04-01 00:00:00",
+     to: process.env.BACKTEST_TO? process.env.BACKTEST_TO: dateformat(now,'yyyy-mm-dd HH:MM:ss') //"2019-04-20 00:00:00"
   },
     batchSize: 50
   }
@@ -98,8 +163,8 @@ config.backtest = {
   config.importer = {
     daterange: {
       // NOTE: these dates are in UTC
-     from: "2018-12-26 16:40:00",
-     to: "2018-12-27 13:00:00"
+     from: process.env.IMPORT_FROM? process.env.IMPORT_FROM: dateformat(yesterday,'yyyy-mm-dd HH:MM:ss'), //"2019-04-22 00:00:00",
+     to: process.env.IMPORT_TO? process.env.IMPORT_TO: dateformat(now,'yyyy-mm-dd HH:MM:ss')//"2019-04-25 00:00:00"
     }
   }
 // settings for other strategies can be found at the bottom, note that only
@@ -141,12 +206,40 @@ config.eventLogger = {
 }
 
 config.telegrambot = {
-  enabled: true,
+  enabled: process.env.TELEGRAM_TOKEN?true:false,
   // Receive notifications for trades and warnings/errors related to trading
   emitTrades: true,
   emitPerformance: true,
-  token: '725925143:AAGX6Qhpf0x1TrrwUPYEdau1eJlsK_w03ZY',
-  botName: 'gekko1_bot'
+  token: process.env.TELEGRAM_TOKEN,
+  botName: process.env.TELEGRAM_BOTNAME
 };
 
+// Want Gekko to perform real trades on buy or sell advice?
+// Enabling this will activate trades for the market being
+// watched by `config.watch`.
+config.trader = {
+  enabled: process.env.TRADER_KEY?true:false,
+  key: process.env.TRADER_KEY,
+  secret: process.env.TRADER_SECRET,
+  username: '', // your username, only required for specific exchanges.
+  passphrase: '', // GDAX, requires a passphrase.
+}
+
+config['I understand that Gekko only automates MY OWN trading strategies'] = process.env.TRADER_KEY?true:false;
+
 module.exports = config;
+
+/*
+if(typeof window !== 'undefined')
+  window.CONFIG = config;
+*/
+if (require && require.main === module) {
+  var filename = __filename.split('.').slice(0, -1).join('.') +'-ui.js';
+  const jsPre  = "const CONFIG = ";
+  const jsPost = ";\r\nif(typeof window === 'undefined') \
+  module.exports = CONFIG; \
+else \
+  window.CONFIG = CONFIG;";
+  fs.writeFileSync(filename, jsPre + JSON.stringify(config) + jsPost);
+  console.log( filename );
+}

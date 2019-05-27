@@ -1,0 +1,9 @@
+projectId = "my-project-id"
+datasetId = "the-datasetId"
+authorization = "google-credentials-file.json"
+path = "plugins/bigquery"
+version = 0.1
+
+[[dependencies]]
+module = "@google-cloud/bigquery"
+version = "3.0.0"
