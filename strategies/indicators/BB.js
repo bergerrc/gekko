@@ -8,6 +8,7 @@ var Indicator = function(BBSettings) {
     this.lower=0;
     this.middle=0;
     this.upper=0;
+    this.hist = [];
 }
 
 Indicator.prototype.calcstd = function(prices, Average)
@@ -35,6 +36,13 @@ Indicator.prototype.update = function(price) {
 
     this.lower = this.middle - this.settings.NbDevDn * std;
     this.upper = this.middle + this.settings.NbDevUp * std;
+    this.band = this.upper - this.lower;
+    this.hist.push ( { lower: this.lower,
+                       upper: this.upper,
+                       middle: this.middle,
+                       band:  this.band } );
+    if ( this.hist.length > this.center.windowLength )
+        this.hist.shift();
 }
 
 module.exports = Indicator;

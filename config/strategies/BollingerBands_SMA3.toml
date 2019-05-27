@@ -1,9 +1,9 @@
-SMA_long = 200
+SMA_long = 225
 SMA_short = 50
-trailingStopLossPct = 0.1 
-minProfit = 0.01
+trailingStopLossPct = 0.15
+minProfit = 0.015
 #lastBuyPrice=6500
-candles=[1,5,15,30,45,60,90,120,240,480]
+candles=[5,15,30,45,60,90,120,240]
 [bbands]
 TimePeriod = 20
 NbDevUp = 2
