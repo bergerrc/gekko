@@ -205,6 +205,7 @@ config.eventLogger = {
   // whitelist: ['portfolioChange', 'portfolioValueChange']
 }
 
+<<<<<<< HEAD
 config.telegrambot = {
   enabled: process.env.TELEGRAM_TOKEN?true:false,
   // Receive notifications for trades and warnings/errors related to trading
@@ -213,6 +214,16 @@ config.telegrambot = {
   token: process.env.TELEGRAM_TOKEN,
   botName: process.env.TELEGRAM_BOTNAME
 };
+=======
+/*config.telegrambot = {
+  enabled: true,
+  // Receive notifications for trades and warnings/errors related to trading
+  emitTrades: true,
+  emitPerformance: true,
+  token: 'token',
+  botName: 'botname'
+};*/
+>>>>>>> d38c2759c898f5e1c357fc35b2e4e3cbb44c0f8a
 
 // Want Gekko to perform real trades on buy or sell advice?
 // Enabling this will activate trades for the market being
