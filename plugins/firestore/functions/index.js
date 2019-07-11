@@ -1,12 +1,40 @@
 const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 // exports.helloWorld = functions.https.onRequest((request, response) => {
 //  response.send("Hello from Firebase!");
 // });
-exports.firestore = require('./firestore');
+const firestore = require('./firestore');
+exports.onTableItemCreate = firestore.onTableItemCreate;
+exports.onTableItemDelete = firestore.onTableItemDelete;
+exports.onPendingCreate = firestore.onPendingCreate;
+exports.onPendingDelete = firestore.onPendingDelete;
+exports.onRangeCreate = firestore.onRangeCreate;
+exports.onRangeUpdate = firestore.onRangeUpdate;
+exports.onRangeDelete = firestore.onRangeDelete;
+exports.onRangesLockCreate = firestore.onRangesLockCreate;
+exports.onRangesLockDelete = firestore.onRangesLockDelete;
 
+//exports.firestore = require('./firestore');
+
+exports.stats = require('./statistics').Statistics;
+// Take the text parameter passed to this HTTP endpoint and insert it into the
+// Realtime Database under the path /messages/:pushId/original
+exports.resetStatistics = functions.https.onRequest((req, res) => {
+  // Grab the text parameter.
+  const refPath = req.query.path;
+  res.write("started. Reference: "+refPath);
+  stat.Statistics.reset(refPath)
+  .then(()=>{
+    res.write("reset OK<br>");
+    return stat.Statistics.countAll(refPath)
+  })
+  .then(()=>{
+    return res.write("countAll OK<br>");
+  });
+});
 
 // Take the text parameter passed to this HTTP endpoint and insert it into the
 // Realtime Database under the path /messages/:pushId/original

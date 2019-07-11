@@ -3,7 +3,7 @@
 //original source: https://gist.github.com/anonymous/d86a6f001df1c7d6261513ce6c2e3ad3#file-rate-queue-js
 //Arhive: https://medium.com/@ty0h/a-rate-limit-queue-in-nodejs-es2017-b3cfd5a67912
 
-const log = require('gekko-core/log'); //{};
+const log = require('../../core/log'); //{};
 //const util = require('util');
 //log.debug = util.debuglog('rate-queue'); 
 // const path = require('path'); const basename = path.basename(module.filename, path.extname(module.filename));

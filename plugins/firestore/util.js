@@ -1,4 +1,4 @@
-var config = require('gekko-core/util').getConfig();
+var config = require('../../core/util').getConfig();
 const PATH_SPLIT = '/';
 const default_schema = [
   {

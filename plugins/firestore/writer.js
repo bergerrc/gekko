@@ -1,8 +1,7 @@
 var _ = require('lodash');
-const util = require('gekko-core/util');
-const log = require('gekko-core/log');
+const util = require('../../core/util');
+const log = require('../../core/log');
 const config = util.getConfig();
-const mode = util.gekkoMode();
 var moment = require('moment');
 const async = require('async');
 
@@ -15,6 +14,7 @@ var Store = function(done, pluginMeta) {
   this.done = done;
   this.db = handle;
   this.cache = [];
+  this.batches = [];
   this.queue = new RateLimitQueue(config.firestore.ratelimit);
   done();
 }
@@ -41,7 +41,7 @@ Store.prototype.writeCandles = function() {
   let p = this.queue.append(
 
     function insertAll (rows) {
-      return this.db.insert(firestoreUtil.table('candles'), rows )
+      return this.db.insert(firestoreUtil.tablePath('candles'), rows )
     }.bind(this), this.cache )
 
   .then( (rowsCount)=>{
@@ -61,22 +61,43 @@ Store.prototype.writeCandles = function() {
   return p;
 }
 
+Store.prototype.deleteCandles = function(rows) {
+  //Add to queue to prevent rate_limit exceed
+  var queue = new RateLimitQueue(1); //1 per second
+  let p = queue.append(
+
+    function deleteAll (rows) {
+      return this.db.delete(firestoreUtil.tablePath('candles'), rows )
+    }.bind(this), rows )
+
+  .then( (rowsCount)=>{
+    log.debug(`Deleted ${rowsCount} rows`);
+    return rowsCount;
+  })
+  .catch( (err)=>{
+      throw err;
+  });
+  return p;
+}
+
 var processCandle = function(candle, done) {
   this.cache.push(candle);
-  if ( mode == "importer" ){
-    if ( this.cache.length >= 1000 )
-      this.writeCandles();
-  }else
-    this.writeCandles();
-  done();  //Dont wait for write response
+  if ( util.gekkoMode() !== "importer" ||  this.cache.length >= 100 ){
+    this.batches.push( this.writeCandles() );
+  }
+  done();
 };
 
-var finalize = function(done) {
-  this.writeCandles().then( count=>{
-    this.db = null;
-    this.queue.cancel();
-    done();
-  });
+var finalize = async function(done) {
+  this.batches.push( this.writeCandles() );
+  await Promise.all( this.batches );
+  this.db = null;
+  this.batches = null;
+  this.queue.cancel();
+  /**@TODO Set delay because it is finishing before the promises */
+  setTimeout(
+      done, 
+      20000);
 }
 
 if(config.candleWriter.enabled) {

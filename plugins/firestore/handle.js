@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-const util = require('gekko-core/util');
+const util = require('../../core/util');
 const config = util.getConfig();
 const dirs = util.dirs();
 
@@ -10,38 +10,45 @@ const adapter = config.firestore;
 const TYPE_COLLECTION = "collection";
 const TYPE_DOCUMENT = "document";
 const PATH_SPLIT = firestoreUtil.PATH_SPLIT;
-const stats = require('./functions/statistics');
 const {Firestore} = require('@google-cloud/firestore');
-//const mode = util.gekkoMode();
+//const FirebaseAdmin = require('firebase-admin');
 
 var Handle = function() {
   _.bindAll(this);
-  const databasePath = firestoreUtil.databasePath();
   const tablePath = firestoreUtil.tablePath('candles');
   const schema = firestoreUtil.schema();
   const options = {schema};
   const errorOnDuplicate = adapter.errorOnDuplicate;
   const settings = {projectId: adapter.projectId,
                     keyFilename: adapter.keyFilename};
-
   const client = new Firestore(settings);
+
+  if ( process.env.FUNCTIONS_ENV === 'local') {
+    const localFunctions = require('./functions');
+    this.onTableItemCreate = localFunctions.onTableItemCreate? localFunctions.onTableItemCreate.run: undefined;
+    this.onTableItemDelete = localFunctions.onTableItemDelete? localFunctions.onTableItemDelete.run: undefined;
+  }
 
   var getChildren = function(path, ref){
     var children = [];
     if (!path)
-      path = databasePath;
+      path = adapter.rootCollection;
     var pathStr = !Array.isArray(path)? path: path.join(PATH_SPLIT);
     var pathArr =  Array.isArray(path)? path: pathStr.split(PATH_SPLIT);
 
     const type = pathArr.length%2==0? TYPE_DOCUMENT: TYPE_COLLECTION;
     if ( type == TYPE_COLLECTION )
-      children = client.collection(pathStr).listCollections();
+      children = client.collection(pathStr).listDocuments();
     if ( type == TYPE_DOCUMENT )
-      children = client.doc(pathStr).listDocuments();
+      children = client.doc(pathStr).listCollections();
     return children;
   }
 
   this.collections = async function(path) {
+    if ( !path )
+      return client.listCollections();
+
+    var pathStr = !Array.isArray(path)? path: path.join(PATH_SPLIT);
     var pathArr =  Array.isArray(path)? path: pathStr.split(PATH_SPLIT);
     const type = pathArr.length%2==0? TYPE_DOCUMENT: TYPE_COLLECTION;
     if ( type!=TYPE_DOCUMENT )
@@ -66,11 +73,9 @@ var Handle = function() {
   }
   
   this.tables = function (_collectionPath) {
-    // Lists all tables in the specified project
-    //Tables must be in the third level
-    if ( _tablePath.split(PATH_SPLIT).length!=3 )
-      throw `Path informed '${_collectionPath}' is not valid for tables`;
-    return getChildren(_collectionPath);
+    if ( !_collectionPath )
+      _collectionPath = adapter.rootCollection;
+    return this.collections(_collectionPath);
   }
 
   this.table = function (_tablePath) {
@@ -85,40 +90,48 @@ var Handle = function() {
   }
 
   this.insert = async function(tablePath, rows){
-    if ( !rows.length )
+    if ( !Array.isArray(rows) )
       rows = [rows];
     //var keyPrefix = tablePath.split(PATH_SPLIT).pop().split('_').shift();
     
-    const batch = client.batch();
+    var batch = client.batch();
     const table = this.table(tablePath);
-    
+    var insertedRefs =[];
     for ( var i=0; i < rows.length; i++ ){
+      if ( i % 500 == 0 ){
+        batch.commit();
+        batch = client.batch();
+      }
       // Inserts a single row into a table
       var docRef = table.doc( rows[i].start.toString() );
       if ( errorOnDuplicate )
         batch.create( docRef, rows[i] );
       else
         batch.set( docRef, rows[i] );
+      
+      insertedRefs.push( docRef );
     }
-    stats.update(docRef);
-    //docRef.onSnapshot(stats.update.bind(stats));
-
-    return batch.commit()
-          .then( (res)=> {
-            //log.debug(`Inserted rows: ${res.length}`);
-            //stats.update( rows[rows.length-1], rows.length );
-            return res.length; 
-          })
-          .catch( err=> {
-            log.error( err.errors? `${err.name}: ${err.errors.length}/${rows.length}`: err.message );
-            if ( err.response && err.response.insertErrors )
-              err.response.insertErrors.forEach(line => {
-                line.errors.forEach(fieldErr => {
-                  log.error( `Field '${fieldErr.location}': ${fieldErr.message}`);
-                });
-              });
-            throw err;
+    try{
+      var res = await batch.commit();
+    }catch( err ) {
+      log.error( err.errors? `${err.name}: ${err.errors.length}/${rows.length}`: err.message );
+      if ( err.response && err.response.insertErrors )
+        err.response.insertErrors.forEach(line => {
+          line.errors.forEach(fieldErr => {
+            log.error( `Field '${fieldErr.location}': ${fieldErr.message}`);
           });
+        });
+      throw err;
+    }
+    if ( this.onTableItemCreate ){
+      await Promise.all( 
+        insertedRefs.map( async ref=> {
+          var doc = await ref.get();
+          return this.onTableItemCreate(doc, {params:[]});
+        })
+      );
+    }
+    return res.length; 
   }
 
   this.query = async function (tablePath, keyOrConditions, optionsOrCallback, cb) {
@@ -159,8 +172,10 @@ var Handle = function() {
         }
         response = table.get(); //All documents
       }
-      if ( callback )
-        callback(null, response.docs);
+      if ( callback ){
+        var snap = await response;
+        callback(null, snap.docs.map(doc=>doc.data()));
+      }
       return response;
     }catch(err){
       if ( callback )
@@ -168,6 +183,38 @@ var Handle = function() {
       else
         throw err;
     }
+  }
+
+  this.delete = async function(tablePath, rows){
+    if ( !Array.isArray(rows) )
+      rows = [rows];
+    //var keyPrefix = tablePath.split(PATH_SPLIT).pop().split('_').shift();
+    
+    const table = this.table(tablePath);
+    var p = Promise.resolve();
+    for ( var j=0; j < rows.length/10; j++ ){
+      var batch = client.batch();
+      var deletedRefs = [];
+      for ( var i=0; i < rows.length; i++ ){
+        // Inserts a single row into a table
+        var docRef = table.doc( rows[i].start.toString() );
+        batch.delete( docRef, rows[i] );
+        deletedRefs.push( docRef );
+      }
+      p = p.then(()=> batch.commit());
+    }
+    return p.then( (res)=> {
+            if ( this.onTableItemDelete ){
+              deletedRefs.map( async ref=> {
+                var doc = await ref.get();
+                this.onTableItemDelete(doc, {params:[]});
+              });
+            }
+            return res.length; 
+          })
+          .catch( err=> {
+            throw 'error on deleting row ' + err.message;
+          });
   }
 
   this.setup = async function(){
@@ -214,7 +261,7 @@ async function main(attempt){
   var fire = module.exports;
   var batches = [];
   var startBefore = Math.round(Date.now()/1000-1,0);
-  var start = 1558861140 + attempt*60; //Math.round(Date.now()/1000,0); 
+  var start = 1560125700 + attempt*60; //Math.round(Date.now()/60000,0)*60 + attempt*60; 
   var n = await fire.insert(firestoreUtil.tablePath('candles'),[{start: start }]);
   //var tbName = [firestoreUtil.databasePath(), ['candles', ['usd','btc'].join('_')].join('_')].join(PATH_SPLIT)
   //n = fire.insert(tbName,[{start: start+900 }]);
@@ -244,9 +291,10 @@ if (require.main === module) {
   var retry = function(retries, attempts=1){
     if ( attempts > retries ) return;
     exec(attempts);
-    //console.log('i:'+attempts);
-    var timeout = setTimeout( retry, 500, retries, ++attempts);
+    console.log('i:'+attempts);
+    var timeout = setTimeout( retry, 1000, retries, ++attempts);
   }
-  retry(900);
+  retry(60);
+  setTimeout( retry, 90000, 60 );
   //stats.reset(firestoreUtil.tablePath('candles'));
 }

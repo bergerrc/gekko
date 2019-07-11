@@ -1,42 +1,41 @@
 const _ = require('lodash');
 const async = require('async');
-const util = require('gekko-core/util');
-const log = require('gekko-core/log');
+const util = require('../../core/util');
+const log = require('../../core/log');
 const firestoreUtil = require('./util');
 var handle = require('./handle');
 var dateformat = require('dateformat');
 
 module.exports = async done => {
   let markets = [];
-  let datasets = [];
+  let rootCollections = [];
   // In single DB setup we don't need to go look into other DBs
-  if ( firestoreUtil.useSingleDatabase() ) 
-    datasets.push( {id: firestoreUtil.dataset()} );
+  if ( firestoreUtil.useSingleRootCollection() ) 
+    rootCollections.push( { path: firestoreUtil.databasePath() } );
   else
-    datasets = await handle.datasets();
+    rootCollections = await handle.collections();
 
-  async.each(datasets, async (dataset, next) => {
-    let tables = await handle.tables( dataset.id );
+  async.each(rootCollections, async (root, next) => {
+    let tables = await handle.tables( root.path );
     tables.forEach(table => {
       let parts = table.id.split('_');
-      let first = parts.shift();
+      //let first = parts.shift();
       /**
        * If using single database, we need to strip
        * exchange from table name. See here how tables
        * are named:
        *
-       * - in single database setup: poloniex_candles_usdt_btc
-       * - in multi db setup: db = poloniex, table = candles_usdt_btc
+       * - in single database setup: poloniex/poloniex/candles_usdt_btc
+       * - in multi db setup:           gekko/poloniex/candles_usdt_btc
        */
-      let exchangeName = firestoreUtil.useSingleDatabase()? first: dataset.id;
-      if( _.first(parts) === 'candles' || first === 'candles' )
-        markets.push({
-          exchange: exchangeName,
-          currency: parts[firestoreUtil.useSingleDatabase()?1:0],
-          asset: _.last(parts)
-        });
+      let exchangeName = _.last(root.path.split(firestoreUtil.PATH_SPLIT));
+      markets.push({
+        exchange: exchangeName,
+        currency: parts[1],
+        asset: _.last(parts)
+      });
     });
-    next();
+    if ( next ) next();
   },
   // got all tables!
   err => {

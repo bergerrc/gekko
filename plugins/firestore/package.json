@@ -2,9 +2,14 @@
   "name": "firestore-gekko-plugin",
   "version": "0.0.1",
   "description": "Firestore plugin for Gekko trading bot",
-  "main": "handle.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "env DOTENV_CONFIG_PATH=../../.env ./node_modules/.bin/_mocha test/*.js --require dotenv/config --recursive test -u tdd --reporter spec --timeout 999999 --config plugins/firestore/sample-config.js",
+    "serve": "firebase serve --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
   },
   "keywords": [
     "Gekko",
@@ -15,10 +20,16 @@
   "author": "Ricardo R. Custodio",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/firestore": "^1.3.0",
+    "@google-cloud/firestore": "1.3.0",
     "async": "^2.6.2",
-    "gekko-core": "file:../../core",
+    "dateformat": "^3.0.3",
     "lodash": "^4.17.11",
     "moment": "^2.24.0"
-  }
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "dotenv": "^8.0.0",
+    "mocha": "^5.0.0"
+  },
+  "private": true
 }

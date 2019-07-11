@@ -1,14 +1,13 @@
 var _ = require('lodash');
-var util = require('gekko-core/util');
+var util = require('../../core/util');
 const config = util.getConfig();
 var async = require('async');
-var log = require('gekko-core/log');
-const Firestore = require('@google-cloud/firestore');
+var log = require('../../core/log');
 var handle = require('./handle');
 var dateformat = require('dateformat');
 var firestoreUtil = require('./util');
 var RateLimitQueue = require('./RateLimitQueue');
-const stats = require('./functions/statistics');
+const stats = require('./functions/statistics').Statistics;
 
 var Reader = function() {
   _.bindAll(this);
@@ -79,6 +78,9 @@ Reader.prototype.tableExists = async function (name='candles', callback) {
 }
 
 Reader.prototype.get = async function(from, to, what, next) {
+  if ( !from || !to )
+    return util.die('from and to parameters must be informed when reader.get');
+
   let conditions = [{field:'start',op:'<=', value: to},
                     {field:'start',op:'>=', value: from}];
   let options = {orderBy: 'start',
@@ -88,8 +90,12 @@ Reader.prototype.get = async function(from, to, what, next) {
   }
   
   try{
-    let res = await this.db.query(firestoreUtil.tablePath('candles'),conditions,options, next);
-    return res.docs;
+    let snap = await this.db.query(firestoreUtil.tablePath('candles'),conditions,options);
+    var res = snap.docs.map(doc=>doc.data());
+    if ( next ){
+      next(undefined,res);
+    }
+    return res;
   }catch( err ){
     log.error(err);
     return util.die('DB error while reading get');
@@ -111,7 +117,7 @@ Reader.prototype.count = async function(fromOrRanges, toOrCallback, next) {
     var cbWrapper = (err,data) =>{
       if ( err && callback ) callback(err);
       if ( callback ) callback(null, _.first(data).count);
-      return _.isArray(data)? _.first(data).count: data;
+      return _.isArray(data)? data.reduce((prev,cur)=>cur.count+prev,0): data;
     }
     //Add to queue to prevent rate_limit exceed
     return this.queue.append(
@@ -149,6 +155,11 @@ Reader.prototype.countRanges = async function(fromOrRanges, toOrCallback, next) 
   try{
     let rangesCount = [];
     let rows = await stats.query(firestoreUtil.tablePath('candles'),null,{orderBy:'max', order:'desc'});
+    if ( rows.length > 1 ){
+      //Force to join ranges before re-count
+      await stats.joinRanges(_.last(rows.docs), false);
+      rows = await stats.query(firestoreUtil.tablePath('candles'),null,{orderBy:'max', order:'desc'});
+    }
     for (let j = 0; j < ranges.length; j++) {
       for (let i = 0; i < rows.size; i++) {
         let from = ranges[j][0];
@@ -165,7 +176,8 @@ Reader.prototype.countRanges = async function(fromOrRanges, toOrCallback, next) 
     }
     if ( callback ) 
       callback(null, rangesCount.length? _.first(rangesCount).count: 0);
-    return rangesCount;
+    let count = rangesCount.reduce((prev,cur)=>cur.count+prev,0);
+    return count;
   }catch(err){
     if ( callback ) 
       callback(err);
@@ -174,7 +186,7 @@ Reader.prototype.countRanges = async function(fromOrRanges, toOrCallback, next) 
   }
 }
 
-Reader.prototype.countTotal = async function(callback) {
+Reader.prototype.countTotal = async function(callback = ()=>{}, name='candles') {
   try{
     let count = await stats.count( firestoreUtil.tablePath(name) );
     if ( callback ) 
@@ -337,5 +349,10 @@ if (require.main === module) {
                  'to:',dateformat(new Date(range.to*1000),'dd/mm/yyyy HH:MM:ss'));   
       });
   };
-  main(done).then(null,err => done(err) )
+  main(done).then(null,err => done(err) );
+  /*
+  var reader = new module.exports;
+  reader.countTotal().then( total => 
+  console.log( total ));
+  */
 }
