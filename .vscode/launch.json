@@ -4,6 +4,8 @@
     // Para obter mais informações, visite: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
+        
         {
             "type": "node",
             "request": "attach",
@@ -19,7 +21,9 @@
             "name": "Gekko UI",
             "program": "${workspaceRoot}/gekko.js",
             "cwd": "${workspaceRoot}",
-            "args": ["--ui"]
+            "args": ["--ui", "--config","server-config.js"],
+            "envFile": "${workspaceRoot}/.env",
+
         },
         {
             "type": "node",
@@ -27,7 +31,8 @@
             "name": "Gekko Papertrader",
             "program": "${workspaceRoot}/gekko.js",
             "cwd": "${workspaceRoot}",
-            "args": ["--config","test-config.js"]
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
         },
         {
             "type": "node",
@@ -35,9 +40,18 @@
             "name": "Gekko Backtest",
             "program": "${workspaceRoot}/gekko.js",
             "cwd": "${workspaceRoot}",
-            "args": ["--config","test-config.js","--backtest"]
+            "args": ["--config","server-config.js","--backtest"],
+            "envFile": "${workspaceFolder}/.env",
         },
-
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Gekko Import",
+            "program": "${workspaceRoot}/gekko.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js","--import"],
+            "envFile": "${workspaceRoot}/.env",
+        },
         {
             "type": "node",
             "request": "launch",
@@ -51,7 +65,8 @@
             "name": "Gekko Import",
             "program": "${workspaceRoot}/gekko.js",
             "cwd": "${workspaceRoot}",
-            "args": ["-c", "import-config.js", "--import"]
+            "args": ["-c", "import-config.js", "--import"],
+            "envFile": "${workspaceFolder}/.env",
         },
         {
             "type": "node",
@@ -66,8 +81,98 @@
                 "${workspaceFolder}/test/indicators/bb.js"
             ],
             "internalConsoleOptions": "openOnSessionStart"
-        }
-
-        
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Mocha Tests - Firestore",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "test/*.js",
+                "--require dotenv/config",
+                "--recursive test -u tdd --reporter spec",
+                "--timeout",
+                "999999",
+                "--config",
+                "plugins/firestore/sample-config.js",
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}/plugins/firestore"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Mocha Tests - Firestore (Functions)",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "test/*.js",
+                "--require dotenv/config",
+                "--recursive test -u tdd --reporter spec",
+                "--timeout",
+                "999999",
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "envFile": "${workspaceFolder}/plugins/firestore/functions/.env",
+            "cwd": "${workspaceFolder}/plugins/firestore/functions"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Unit BigQuery",
+            "program": "${workspaceRoot}/plugins/bigquery/scanner.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "UnitTest",
+            "program": "${workspaceRoot}/plugins/firestore/handle.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
+            //"autoAttachChildProcesses": true,
+            //"runtimeArgs": ["--inspect-debug=0"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "statistics",
+            "program": "${workspaceRoot}/plugins/firestore/functions/statistics.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
+            //"autoAttachChildProcesses": true,
+            //"runtimeArgs": ["--inspect-debug=0"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "reader",
+            "program": "${workspaceRoot}/plugins/firestore/reader.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
+            //"autoAttachChildProcesses": true,
+            //"runtimeArgs": ["--inspect-debug=0"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "scanner",
+            "program": "${workspaceRoot}/plugins/firestore/scanner.js",
+            "cwd": "${workspaceRoot}",
+            "args": ["--config","server-config.js"],
+            "envFile": "${workspaceFolder}/.env",
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "RateLimitUnitTest",
+            "program": "${workspaceRoot}/plugins/bigquery/RateLimitQueue.js",
+            "cwd": "${workspaceRoot}"
+        },
     ]
 }
