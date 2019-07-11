@@ -12,6 +12,10 @@ services:
      - PORT=${PORT:-3000}
      - ADAPTER=${ADAPTER:-sqlite}
      - HEADLESS=${HEADLESS:-true}
+## optionally uncomment if you wish to use nginx as a frontend
+#     - VIRTUAL_HOST=gekko
+#     - PORT=3000
+#     - DOMAIN=gekko
     ports: # you can comment this out when using the nginx frontend
       - "${PORT:-3000}:${PORT-3000}"
 #    volumes:
@@ -20,12 +24,6 @@ services:
 #    links:
 #      - redis
 #      - postgresql
-## optionally set nginx vars if you wish to frontend it with nginx
-#    environment:
-#     - VIRTUAL_HOST=gekko
-#     - PORT=3000
-#     - DOMAIN=gekko
-
 #  redis:
 #    image: redis:latest
 #    volumes:

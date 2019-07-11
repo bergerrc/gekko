@@ -15,6 +15,8 @@ COPY package.json .
 RUN npm install --production && \
     npm install --production redis@0.10.0 talib@1.0.2 tulind@0.8.7 pg && \
     npm cache clean --force
+# install Firebase CLI
+##RUN npm install -g firebase-tools
 
 # Install Gekko Broker dependencies
 WORKDIR exchange
@@ -22,6 +24,21 @@ COPY exchange/package.json .
 RUN npm install --production && \
     npm cache clean --force
 WORKDIR ../
+
+WORKDIR core
+COPY core/package.json .
+WORKDIR ../plugins/firestore
+RUN npm install --production && \
+    npm cache clean --force
+WORKDIR ./functions
+RUN npm install --production && \
+    npm cache clean --force
+WORKDIR ../../../
+
+# Install Gekko Broker dependencies
+#WORKDIR plugins/firestore
+#RUN npm run deploy
+#WORKDIR ../../
 
 # Bundle app source
 COPY . /usr/src/app
