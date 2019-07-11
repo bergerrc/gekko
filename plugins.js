@@ -255,6 +255,13 @@ var plugins = [
       version: '3.0.2'
     }]
   },
+  {
+    name: "Plotly",
+    description: "Plots Gekko data onto a Plotly chart for easier analysis",
+    slug: "plotly",
+    async: false,
+    modes: ["backtest"]
+  },
 ];
 
 module.exports = plugins;
