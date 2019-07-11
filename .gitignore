@@ -38,7 +38,7 @@ dwsync.xml
 
 # Folders & files to ignore
 
-node_modules
+node_modules/
 candles.csv
 cexio.db
 history
@@ -51,9 +51,10 @@ private-*.js
 private-*.toml
 *keys*.json
 exchange/nusadua
--ui.js
+*-ui.js
 .env
 .firebaserc
 firebase.json
 package-lock.json
 server-config.json
+.env
