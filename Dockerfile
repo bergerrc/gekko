@@ -23,14 +23,11 @@ WORKDIR exchange
 COPY exchange/package.json .
 RUN npm install --production && \
     npm cache clean --force
-WORKDIR ../
 
-WORKDIR core
-COPY core/package.json .
 WORKDIR ../plugins/firestore
 RUN npm install --production && \
     npm cache clean --force
-WORKDIR ./functions
+WORKDIR functions
 RUN npm install --production && \
     npm cache clean --force
 WORKDIR ../../../
