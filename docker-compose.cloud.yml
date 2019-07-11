@@ -1,0 +1,12 @@
+version: '3'
+services:
+  cloudfunctions:
+    build: ./cloudfunctions.Dockerfile
+    env_file:
+      - .env
+    environment:
+     - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-gekko-firestore-keys.json}
+     - FIRESTORE_KEYFILENAME=${GOOGLE_APPLICATION_CREDENTIALS:-gekko-firestore-keys.json}
+     - GCLOUD_PROJECT=${GCLOUD_PROJECT}
+     - FIRESTORE_RATELIMIT=${FIRESTORE_RATELIMIT:-500}
+     - FIRESTORE_ROOT_COLLECTION=${FIRESTORE_ROOT_COLLECTION:-gekko}
