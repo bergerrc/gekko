@@ -45,8 +45,8 @@ COPY . /usr/src/app
 EXPOSE ${PORT}
 RUN chmod +x /usr/src/app/docker-entrypoint.sh
 COPY ./docker-entrypoint.sh /usr/src/app/entrypoint.sh
-RUN apt-get update || apt-get install -y dos2unix
-RUN dos2unix /usr/src/app/entrypoint.sh && apt-get --purge remove -y dos2unix || rm -rf /var/lib/apt/lists/*
+RUN sudo apt-get update || sudo apt-get install -y dos2unix
+RUN dos2unix /usr/src/app/entrypoint.sh && sudo apt-get --purge remove -y dos2unix || rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
 
