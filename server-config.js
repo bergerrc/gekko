@@ -3,11 +3,14 @@
 const _ = require('lodash');
 const vm = require('vm');
 const v8debug = vm.runInDebugContext('Debug');
-const util = require(process.cwd() + '/core/util');
 const dateformat = require('dateformat');
 const fs = require('fs');
 const toml = require('toml');
-const dirs = util.dirs();
+const dirs = {
+      tools: process.cwd() + '/core/tools/',
+      web: process.cwd() + '/web/',
+      config: process.cwd() + '/config/',
+}
 
 var config = {};
 var base = require(dirs.web + 'baseUIconfig');
@@ -27,7 +30,7 @@ config.debug = debug || process.env.NODE_ENV!== 'production'?true:false; // for 
 //Override defaults with .ENV
 config.headless = process.env.HEADLESS? process.env.HEADLESS: config.headless;
 config.api.host = process.env.API_HOST? process.env.API_HOST: config.api.host;
-config.api.port = process.env.PORT? parseInt(process.env.PORT): config.api.port;
+config.api.port = process.env.API_PORT? parseInt(process.env.API_PORT): config.api.port;
 config.api.timeout = process.env.API_TIMEOUT? parseInt(process.env.API_TIMEOUT): config.api.timeout;
 
 config.ui.ssl = process.env.HOST_SSL? process.env.HOST_SSL: config.ui.ssl;
@@ -47,24 +50,19 @@ config.adapter = process.env.ADAPTER? process.env.ADAPTER: config.adapter;
 config.firestore = {
   path: 'plugins/firestore',
   version: 0.1,
-  projectId: process.env.GCLOUD_PROJECT,
   rootCollection: process.env.FIRESTORE_ROOT_COLLECTION,
-  keyFilename: process.env.FIRESTORE_KEYFILENAME? process.env.FIRESTORE_KEYFILENAME: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-  //errorOnDuplicate: true,
   dependencies: [{
     module: "@google-cloud/firestore",
-    version: "3.0.0"
+    version: "1.3.0"
   }],
-  ratelimit: process.env.BIGQUERY_RATELIMIT? parseInt(process.env.BIGQUERY_RATELIMIT): 20
-}
 
+  ratelimit: process.env.FIRESTORE_RATELIMIT? parseInt(process.env.FIRESTORE_RATELIMIT): 20
+}
 
 config.bigquery = {
   path: 'plugins/bigquery',
   version: 0.1,
-  projectId: process.env.GCLOUD_PROJECT,
   datasetId: process.env.BIGQUERY_DATASET_ID,
-  keyFilename: process.env.BIGQUERY_KEYFILENAME? process.env.BIGQUERY_KEYFILENAME: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   //preventDuplicatedTS: true,
   dependencies: [{
     module: "@google-cloud/bigquery",
@@ -120,7 +118,7 @@ config.watch = {
 }
 config.tradingAdvisor = {
   enabled: true,
-  method: process.env.STRATEGY? process.env.STRATEGY: config.tradingAdvisor.method, //'BollingerBands_SMA3',
+  method: process.env.STRATEGY? process.env.STRATEGY: (config.tradingAdvisor?config.tradingAdvisor.method:'BollingerBands_SMA3'), 
   candleSize: 5,
   historySize: 200
 }
@@ -229,17 +227,19 @@ config['I understand that Gekko only automates MY OWN trading strategies'] = pro
 
 module.exports = config;
 
-/*
-if(typeof window !== 'undefined')
-  window.CONFIG = config;
-*/
+//When called directly (standalone) it is copied in to the destination informed as argument 
 if (require && require.main === module) {
   var filename = __filename.split('.').slice(0, -1).join('.') +'-ui.js';
-  const jsPre  = "const CONFIG = ";
-  const jsPost = ";\r\nif(typeof window === 'undefined') \
-  module.exports = CONFIG; \
-else \
-  window.CONFIG = CONFIG;";
+  if ( process.argv.length > 0 ){
+    var program = require('commander');
+    program.option('--copy <file>', 'Copy to file destination').parse(process.argv);
+    if ( program.copy ){
+      filename = program.copy;
+      console.log(`Copying to ${filename}`);
+    }else
+      console.log(`File destination not informed, copying default to ${filename}`);
+  }
+  const jsPre  = "module.exports = ";
+  const jsPost = "";
   fs.writeFileSync(filename, jsPre + JSON.stringify(config) + jsPost);
-  console.log( filename );
 }

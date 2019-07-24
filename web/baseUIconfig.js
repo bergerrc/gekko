@@ -36,3 +36,24 @@ if(typeof window === 'undefined')
   module.exports = CONFIG;
 else
   window.CONFIG = CONFIG;
+
+//When called directly (standalone) it is copied in to the destination informed as argument 
+if (require && require.main === module) {
+  const fs = require('fs');
+  var filename = __filename.split('.').slice(0, -1).join('.') +'-ui.js';
+  if ( process.argv.length > 0 ){
+    var program = require('commander');
+    program.option('--copy <file>', 'Copy to file destination').parse(process.argv);
+    if ( program.copy ){
+      filename = program.copy;
+      console.log(`Copying to ${filename}`);
+    }else
+      console.log(`File destination not informed, copying default to ${filename}`);
+  }
+  const jsPre  = "const CONFIG = ";
+  const jsPost = ";\r\nif(typeof window === 'undefined') \
+  module.exports = CONFIG; \
+else \
+  window.CONFIG = CONFIG;";
+  fs.writeFileSync(filename, jsPre + JSON.stringify(CONFIG) + jsPost);
+}
