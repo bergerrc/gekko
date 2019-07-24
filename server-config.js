@@ -232,9 +232,9 @@ if (require && require.main === module) {
   var filename = __filename.split('.').slice(0, -1).join('.') +'-ui.js';
   if ( process.argv.length > 0 ){
     var program = require('commander');
-    program.option('--copy <file>', 'Copy to file destination').parse(process.argv);
-    if ( program.copy ){
-      filename = program.copy;
+    program.option('-c, --config <file>', 'Copy to file destination').parse(process.argv);
+    if ( program.config ){
+      filename = program.config;
       console.log(`Copying to ${filename}`);
     }else
       console.log(`File destination not informed, copying default to ${filename}`);
