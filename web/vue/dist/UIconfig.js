@@ -19,6 +19,18 @@ const CONFIG = {
   },
   adapter: 'sqlite'
 }
+//Override defaults with environment variables
+CONFIG.headless = process.env.HEADLESS? process.env.HEADLESS: CONFIG.headless;
+CONFIG.api.host = process.env.API_HOST? process.env.API_HOST: CONFIG.api.host;
+CONFIG.api.port = process.env.API_PORT? parseInt(process.env.API_PORT): CONFIG.api.port;
+CONFIG.api.timeout = process.env.API_TIMEOUT? parseInt(process.env.API_TIMEOUT): CONFIG.api.timeout;
+
+CONFIG.ui.ssl = process.env.HOST_SSL? process.env.HOST_SSL: CONFIG.ui.ssl;
+CONFIG.ui.host = process.env.HOST? process.env.HOST: CONFIG.ui.host;
+CONFIG.ui.port = process.env.PORT? parseInt(process.env.PORT): CONFIG.ui.port;
+CONFIG.ui.path = process.env.UI_PATH? process.env.UI_PATH: CONFIG.ui.path;
+
+CONFIG.adapter = process.env.ADAPTER? process.env.ADAPTER: CONFIG.adapter;
 
 if(typeof window === 'undefined')
   module.exports = CONFIG;
