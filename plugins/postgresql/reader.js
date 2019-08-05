@@ -190,6 +190,51 @@ Reader.prototype.getBoundry = function(next) {
   });  
 }
 
+Reader.prototype.getRanges = function(next) {
+  this.db.connect((err,client,done) => {
+    var query = client.query(new Query(`
+      WITH 
+      nofill AS (
+        select 
+            a.start lb,
+            to_timestamp(a.start) lb_ts,
+            min(c.start) fa,
+            to_timestamp(min(c.start)) fa_ts,
+            row_number () over (order by a.start) seq
+        from ${postgresUtil.table('candles')} a
+        left outer join ${postgresUtil.table('candles')} b on b.start between (a.start+60) and (a.start+180)
+        left outer join ${postgresUtil.table('candles')} c on c.start > a.start
+        where b.id is null
+        group by a.start
+        order by a.start 
+      ),
+      refill AS (
+        SELECT a.fa, a.fa_ts, a.seq seq1, b.lb, b.lb_ts, b.seq seq2 FROM nofill a
+        left outer join nofill b on b.seq = a.seq+1 or a.seq = b.seq-1
+      ),
+      bottom AS (
+        SELECT a.fa, to_timestamp(a.fa) fa_ts, b.lb, b.lb_ts, a.seq seq1, b.seq seq2
+        FROM (SELECT min(start) fa, 1 seq FROM ${postgresUtil.table('candles')} ) a
+        inner join nofill b on a.seq = b.seq
+      )
+    SELECT coalesce(b.fa_ts,a.fa_ts) as from_ts, coalesce(b.fa, a.fa) as from,
+          a.lb_ts as to_ts, a.lb as to, a.seq1 seq
+    FROM refill a
+    LEFT OUTER JOIN bottom b on a.seq1 = b.seq1
+    where a.fa is not null;
+    `));
+    var rows = [];
+    query.on('row', function(row) {
+      rows.push(row);
+    });
+
+    query.on('end',function(){
+      done();
+      next(null, rows);
+    });
+  });  
+}
+
 Reader.prototype.close = function() {
   //obsolete due to connection pooling
   //this.db.end();

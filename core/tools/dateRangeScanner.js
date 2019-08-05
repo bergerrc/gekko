@@ -54,6 +54,10 @@ var scan = function(done) {
       var missing = optimal - res.available + 1;
 
       log.info(`The database has ${missing} candles missing, Figuring out which ones...`);
+
+      if ( reader.getRanges ){
+        return reader.getRanges( (err,ranges) => done(null, ranges, reader) );
+      }
       
       var iterator = {
         from: last - (BATCH_SIZE * 60),
