@@ -33,10 +33,10 @@ const mode = util.gekkoMode();
 const connectionString = config.postgresql.connectionString;
 
 const checkClient = new pg.Pool({
-  connectionString: connectionString + '/postgres',
+  connectionString: connectionString + (connectionString.startsWith('socket')? '?db=':'/') + 'postgres',
 });
 const pool = new pg.Pool({
-  connectionString: connectionString + '/' + dbName,
+  connectionString: connectionString + (connectionString.startsWith('socket')? '?db=':'/') + dbName,
 });
 
 // We need to check if the db exists first.

@@ -11,7 +11,7 @@ var connectionString = config.postgresql.connectionString;
 
 
 module.exports = done => {
-  var scanClient = new pg.Client(connectionString+"/postgres");
+  var scanClient = new pg.Client(connectionString+(connectionString.startsWith('socket')? '?db=':'/') +"postgres");
 
   let markets = [];
 
@@ -31,7 +31,7 @@ module.exports = done => {
 
       async.each(result.rows, (dbRow, next) => {
 
-        var scanTablesClient = new pg.Client(connectionString + "/" + dbRow.datname);
+        var scanTablesClient = new pg.Client(connectionString + (connectionString.startsWith('socket')? '?db=':'/') + dbRow.datname);
         var dbName = dbRow.datname;
 
         scanTablesClient.connect(function (err) {
